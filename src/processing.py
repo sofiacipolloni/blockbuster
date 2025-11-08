@@ -21,18 +21,61 @@ def load_data(path: str = "data/movies.csv") -> pd.DataFrame:
 
     return pd.DataFrame() 
 
-if __name__ == "__main__":
-    df = load_data("data/movies.csv")
-    print("\n Preview")
-    print(df.head())
 
+# CLEANING and DATA MANIPULATION
 
-
-# Cleaning the dataset
 _months_map = {
     "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
     "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12
 }
+
+
+# Genre mapping
+canon_genres = [
+    "Action","Adventure","Animation","Comedy","Crime","Drama",
+    "Fantasy","Horror","Mystery","Romance","Sci-Fi","Thriller"
+]
+
+genre_keywords = {
+    "Action":   ["action"],
+    "Adventure":["adventure"],
+    "Animation":["animation","animated"],
+    "Comedy":   ["comedy"],
+    "Crime":    ["crime"],
+    "Drama":    ["drama"],
+    "Fantasy":  ["fantasy"],
+    "Horror":   ["horror"],
+    "Mystery":  ["mystery"],
+    "Romance":  ["romance"],
+    "Sci-Fi":   ["sci fi","sci-fi","science fiction"],
+    "Thriller": ["thriller"],
+}
+
+def _map_genres_string(raw: str) -> str | None:
+    """Map 'Adventure, Comedy, Family' -> 'Adventure, Comedy' using CANON_GENRES."""
+    import pandas as pd, re
+    if pd.isna(raw):
+        return None
+    txt = str(raw).lower()
+    # normalize separators: ',', '|', '/', ';' -> ','
+    txt = re.sub(r"[|/;]", ",", txt)
+    tokens = [t.strip() for t in txt.split(",") if t.strip()]
+    hits = set()
+    for tok in tokens:
+        for canon, keys in genre_keywords.items():
+            if any(k in tok for k in keys):
+                hits.add(canon)
+    if not hits:
+        return None
+    ordered = [g for g in canon_genres if g in hits]
+    return ", ".join(ordered)
+
+def _pick_main(gen_agg: str | None) -> str | None:
+    """Return the first canonical genre as main."""
+    if not gen_agg:
+        return None
+    return gen_agg.split(",")[0].strip()
+
 
 #Clean function
 def clean(df: pd.DataFrame) -> pd.DataFrame:
@@ -79,34 +122,39 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
     
     if {"title", "year"}.issubset(d.columns):
         d = d.drop_duplicates(subset=["title", "year"])
+        
+    # --- Convert budget and income to numeric ---
+    for col in ["budget", "income"]:
+        if col in d.columns:
+            s = d[col].astype(str).str.strip().replace({"Unknown": pd.NA})
+            s = s.str.replace(r"[^\d.]", "", regex=True) 
+            d[f"{col}_num"] = pd.to_numeric(s, errors="coerce")
 
+
+    # --- Genre aggregation ---
+    # show what the column is actually called
+    print("Genre column present?:", any(c.lower() in ("genre","genres") for c in d.columns))
+    genre_col = None
+    for c in d.columns:
+        if c.lower() in ("genre","genres"):
+            genre_col = c
+            break
+
+    if "genre" in d.columns:
+    # Apply both cleaning and main-genre extraction at once
+        d["genre_main"] = d["genre"].apply(lambda x: _pick_main(_map_genres_string(x)))
+
+        print("\nSample genres (raw → main):")
+        print(d[["genre", "genre_main"]].head(10))
+
+        # Number of movies per main genre
+        print("\nMovies per main genre:")
+        print(d["genre_main"].value_counts(dropna=True).head(20))
+        
     return d
 
-
+# Create a new clean dataset
 def save_clean(df, path="data/movies_clean.csv"):
     df.to_csv(path, index=False)
     print(f"Saved cleaned data to {path}")
 
-
-
-# Function which checks if values are numeric
-def to_num(x):
-    """
-    Turn values like '120,000,000' or '$120M' into floats.
-    - removes commas
-    - supports 'K' (thousand) and 'M' (million) suffixes
-    - keeps digits, dot, and minus only
-    """
-    if pd.isna(x):
-        return np.nan
-    s = str(x).replace(",", "").strip()
-    mult = 1.0
-    if s.lower().endswith("m"):
-        mult, s = 1e6, s[:-1]
-    elif s.lower().endswith("k"):
-        mult, s = 1e3, s[:-1]
-    # keep only digits, dot, minus
-    s = "".join(ch for ch in s if ch.isdigit() or ch in ".-")
-    if s in {"", ".", "-"}:
-        return np.nan
-    return float(s) * mult
