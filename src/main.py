@@ -71,4 +71,127 @@ for k, v in summary.items():
 #Save the new metrics in a new cleaned dataset 
 df.to_csv("data/Movies_metrics.csv", index=False)
 
+# Load the dataset
+df_metrics = pd.read_csv("data/Movies_metrics.csv")
+
+
+########
+from src.models import Movie
+
+
+# Check if a movie in the dataset is a "hit"
+# Function to find a movie by title
+def find_movie(title, data):
+    match = data[data["title"].str.lower() == title.lower()]
+    return match if not match.empty else None
+
+#
+print("\n🎬 Welcome! Check if a movie is a hit!")
+print("Type a movie title to check it, or 'exit' to quit.\n")
+
+# Initialize control variable
+is_found = False
+
+# STEP 5: Loop until a valid movie title is found or user quits
+while not is_found:
+    
+    # Ask the user for a movie title
+    user_input = input("Enter a movie title: ").strip()
+    
+    # Allow exit
+    if user_input.lower() == "exit":
+        print("Goodbye!")
+        break
+    
+    # STEP 6: Search for the movie in the dataset
+    match = find_movie(user_input, df_metrics)
+    
+    # STEP 7: Provide feedback if not found
+    if match is None:
+        print("❌ This movie is not in the dataset.")
+
+        # Chiedi se vuole inserire i dati a mano
+        choice = input("Do you want to enter budget, income, and rating manually? (yes/no): ").strip().lower()
+        if choice != "yes":
+            print("Try another title.")
+            continue
+
+        # Helper per numeri (accetta 1,234,567 o $1,234 ecc.)
+        def ask_float(prompt):
+            while True:
+                raw = input(prompt).strip()
+                try:
+                    val = float(raw.replace("$", "").replace(",", ""))
+                    return val
+                except ValueError:
+                    print("Please enter a valid number (e.g., 100000000).")
+
+        budget = ask_float("Budget (USD): ")
+        income = ask_float("Income (USD): ")
+        # rating vincolato a 0–10
+        while True:
+            try:
+                rating = float(input("Rating (0-10): ").strip())
+                if 0 <= rating <= 10:
+                    break
+                else:
+                    print("Rating must be between 0 and 10.")
+            except ValueError:
+                print("Please enter a valid number.")
+
+        # Crea il Movie “manuale” e mostra il risultato
+        movie = Movie(title=user_input, budget=budget, income=income, rating=rating)
+        print(f"\n✅ Custom movie: {movie.title}")
+        movie.describe()
+        print("🔥 Yes! This movie is a HIT!" if movie.is_hit() else "💤 Not quite a hit...")
+
+        is_found = True
+        continue
+    
+    # STEP 8: If found, create Movie object and show info
+    row = match.iloc[0]
+    movie = Movie.from_row(row)
+    
+    print(f"\n✅ Found: {movie.title}")
+    movie.describe()
+    
+    # STEP 9: Check if it’s a hit
+    if movie.is_hit():
+        feedback = "🔥 Yes! This movie is a HIT!"
+    else:
+        feedback = "💤 Not quite a hit..."
+    
+    print(feedback)
+    
+    # End loop
+    is_found = True
+
+print("\n[info] Interactive loop finished. Starting plots...")
+
+########## Plots
+from src.models import MoviePlotter
+
+# Initialize the plotter
+plotter = MoviePlotter(df_metrics)
+
+# 1. Distributions
+plotter.dist("rating")
+plotter.dist("roi")
+plotter.dist("profit")
+
+# 2. Economic relationship
+plotter.scatter("budget_num", "income_num")
+
+# 3. Genre analysis
+plotter.box_by_genre("roi")
+plotter.box_by_genre("rating")
+
+# 4. Correlations
+plotter.corr_heatmap()
+
+# 5. Trends over time
+plotter.line_by_year("roi")
+plotter.line_by_year("rating")
+
+
 
