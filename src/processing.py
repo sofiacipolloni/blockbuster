@@ -1,9 +1,9 @@
-
 import pandas as pd
 import re
 import numpy as np
+from pathlib import Path
 
-#Loading the dataset
+#Loading the raw dataset
 def load_data(path: str = "data/movies.csv") -> pd.DataFrame:
     try:
         df = pd.read_csv(path)
@@ -23,12 +23,10 @@ def load_data(path: str = "data/movies.csv") -> pd.DataFrame:
 
 
 # CLEANING and DATA MANIPULATION
-
 _months_map = {
     "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
     "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12
 }
-
 
 # Genre mapping
 canon_genres = [
@@ -52,8 +50,6 @@ genre_keywords = {
 }
 
 def _map_genres_string(raw: str) -> str | None:
-    """Map 'Adventure, Comedy, Family' -> 'Adventure, Comedy' using CANON_GENRES."""
-    import pandas as pd, re
     if pd.isna(raw):
         return None
     txt = str(raw).lower()
@@ -70,14 +66,15 @@ def _map_genres_string(raw: str) -> str | None:
     ordered = [g for g in canon_genres if g in hits]
     return ", ".join(ordered)
 
+# Return the first canonical genre as main
 def _pick_main(gen_agg: str | None) -> str | None:
-    """Return the first canonical genre as main."""
+
     if not gen_agg:
         return None
     return gen_agg.split(",")[0].strip()
 
 
-#Clean function
+# "clean" function
 def clean(df: pd.DataFrame) -> pd.DataFrame:
 
     d = df.copy()
@@ -123,7 +120,7 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
     if {"title", "year"}.issubset(d.columns):
         d = d.drop_duplicates(subset=["title", "year"])
         
-    # --- Convert budget and income to numeric ---
+    # Convert budget and income to numeric 
     for col in ["budget", "income"]:
         if col in d.columns:
             s = d[col].astype(str).str.strip().replace({"Unknown": pd.NA})
@@ -131,21 +128,13 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
             d[f"{col}_num"] = pd.to_numeric(s, errors="coerce")
 
 
-    # --- Genre aggregation ---
-    # show what the column is actually called
-    print("Genre column present?:", any(c.lower() in ("genre","genres") for c in d.columns))
-    genre_col = None
-    for c in d.columns:
-        if c.lower() in ("genre","genres"):
-            genre_col = c
-            break
-
+    # Genre aggregation 
     if "genre" in d.columns:
     # Apply both cleaning and main-genre extraction at once
         d["genre_main"] = d["genre"].apply(lambda x: _pick_main(_map_genres_string(x)))
 
         print("\nSample genres (raw → main):")
-        print(d[["genre", "genre_main"]].head(10))
+        print(d[["genre", "genre_main"]])
 
         # Number of movies per main genre
         print("\nMovies per main genre:")
@@ -153,8 +142,46 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
         
     return d
 
-# Create a new clean dataset
+
+# New clean dataset
 def save_clean(df, path="data/movies_clean.csv"):
     df.to_csv(path, index=False)
     print(f"Saved cleaned data to {path}")
 
+
+
+#File paths 
+raw_path  = Path("data/movies.csv")
+clean_path = Path("data/movies_clean.csv")
+
+# "run" function
+def run(input_path: str = str(raw_path), output_path: str = str(clean_path)) -> pd.DataFrame:
+    """Load -> clean -> save -> return cleaned DataFrame."""
+    print(f"Loading raw dataset: {input_path}")
+    df_raw = load_data(input_path)
+
+    print("Cleaning...")
+    df = clean(df_raw)
+
+    print(f"Saving cleaned dataset to: {output_path}")
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    save_clean(df, output_path)
+
+    print("Done.")
+    return df_raw, df
+
+#
+# "find_movie" function to find a movie by title
+def find_movie(title, data):
+    match = data[data["title"].str.lower() == title.lower()]
+    return match if not match.empty else None
+
+# "ask_float" function to recognize different numeric formats 
+def ask_float(prompt):
+    while True:
+        raw = input(prompt).strip()
+        try:
+            val = float(raw.replace("$", "").replace(",", "")) #float conversion
+            return val
+        except ValueError:
+            print("Please enter a valid number")

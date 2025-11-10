@@ -2,27 +2,16 @@ import pandas as pd
 import numpy as np
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from src.processing import load_data, clean, save_clean
+
+# Import functions in processing.py
+from src.processing import run, find_movie, ask_float
+from src.models import Movie, MoviePlotter
 
 
 raw_path  = Path("data/movies.csv")
 clean_path = Path("data/movies_clean.csv")
-
-def run(input_path: str = str(raw_path), output_path: str = str(clean_path)) -> pd.DataFrame:
-    """Load -> clean -> save -> return cleaned DataFrame."""
-    print(f"Loading raw dataset: {input_path}")
-    df_raw = load_data(input_path)
-
-    print("Cleaning...")
-    df = clean(df_raw)
-
-    print(f"Saving cleaned dataset to: {output_path}")
-    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    save_clean(df, output_path)
-
-    print("Done.")
-    return df_raw, df
 
 
 if __name__ == "__main__":
@@ -39,11 +28,11 @@ print("\nDataset information:", df_raw.info())
 
 
 # DEFINITION OF METRICS 
-# Financial metrics - PROFIT and ROI
+# 1) Financial metrics - PROFIT and ROI
 df["profit"] = df["income_num"] - df["budget_num"]
 df["roi"] = df["income_num"] / df["budget_num"]  # >1 --> profitable; can be NaN/inf if budget is 0/NaN
 
-# 4) "Hit": top 25% by both rating and ROI
+# 2) "Hit": top 25% by both rating and ROI
 rating_cut = df["rating"].quantile(0.75)
 roi_cut = df["roi"].quantile(0.75)
 df["hit"] = (df["rating"] >= rating_cut) & (df["roi"] >= roi_cut)
@@ -68,31 +57,22 @@ print("\n Summary:")
 for k, v in summary.items():
     print(f"{k}: {v}")
 
+
 #Save the new metrics in a new cleaned dataset 
 df.to_csv("data/Movies_metrics.csv", index=False)
-
 # Load the dataset
 df_metrics = pd.read_csv("data/Movies_metrics.csv")
 
 
 ########
-from src.models import Movie
-
-
 # Check if a movie in the dataset is a "hit"
-# Function to find a movie by title
-def find_movie(title, data):
-    match = data[data["title"].str.lower() == title.lower()]
-    return match if not match.empty else None
-
-#
 print("\n🎬 Welcome! Check if a movie is a hit!")
 print("Type a movie title to check it, or 'exit' to quit.\n")
 
 # Initialize control variable
 is_found = False
 
-# STEP 5: Loop until a valid movie title is found or user quits
+# Loop until a valid movie title is found or ask wether to write another title or quit
 while not is_found:
     
     # Ask the user for a movie title
@@ -103,32 +83,22 @@ while not is_found:
         print("Goodbye!")
         break
     
-    # STEP 6: Search for the movie in the dataset
+    # Search for the movie in the dataset
     match = find_movie(user_input, df_metrics)
     
-    # STEP 7: Provide feedback if not found
+    # Provide feedback if not found
     if match is None:
         print("❌ This movie is not in the dataset.")
 
-        # Chiedi se vuole inserire i dati a mano
+        # Ask to insert data manually
         choice = input("Do you want to enter budget, income, and rating manually? (yes/no): ").strip().lower()
         if choice != "yes":
             print("Try another title.")
             continue
 
-        # Helper per numeri (accetta 1,234,567 o $1,234 ecc.)
-        def ask_float(prompt):
-            while True:
-                raw = input(prompt).strip()
-                try:
-                    val = float(raw.replace("$", "").replace(",", ""))
-                    return val
-                except ValueError:
-                    print("Please enter a valid number (e.g., 100000000).")
-
         budget = ask_float("Budget (USD): ")
         income = ask_float("Income (USD): ")
-        # rating vincolato a 0–10
+        # rating 0–10
         while True:
             try:
                 rating = float(input("Rating (0-10): ").strip())
@@ -139,27 +109,27 @@ while not is_found:
             except ValueError:
                 print("Please enter a valid number.")
 
-        # Crea il Movie “manuale” e mostra il risultato
+        # Create the movie
         movie = Movie(title=user_input, budget=budget, income=income, rating=rating)
-        print(f"\n✅ Custom movie: {movie.title}")
+        print(f"\n✅ Movie: {movie.title}")
         movie.describe()
-        print("🔥 Yes! This movie is a HIT!" if movie.is_hit() else "💤 Not quite a hit...")
+        print("Yes! This movie is a HIT!" if movie.is_hit() else "Not quite a hit...")
 
         is_found = True
         continue
     
-    # STEP 8: If found, create Movie object and show info
+    # If found, create Movie object and show info
     row = match.iloc[0]
     movie = Movie.from_row(row)
     
     print(f"\n✅ Found: {movie.title}")
     movie.describe()
     
-    # STEP 9: Check if it’s a hit
+    # Check if it’s a hit
     if movie.is_hit():
-        feedback = "🔥 Yes! This movie is a HIT!"
+        feedback = "Yes! This movie is a HIT!"
     else:
-        feedback = "💤 Not quite a hit..."
+        feedback = "Not quite a hit..."
     
     print(feedback)
     
@@ -167,6 +137,8 @@ while not is_found:
     is_found = True
 
 print("\n[info] Interactive loop finished. Starting plots...")
+
+
 
 ########## Plots
 from src.models import MoviePlotter
@@ -192,6 +164,4 @@ plotter.corr_heatmap()
 # 5. Trends over time
 plotter.line_by_year("roi")
 plotter.line_by_year("rating")
-
-
 
