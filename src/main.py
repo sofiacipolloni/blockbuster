@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import sys
 from pathlib import Path
+from matplotlib import pyplot as plt
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
@@ -20,6 +21,7 @@ if __name__ == "__main__":
 
     
 # BEFORE CLEANING 
+print("\n Analysis of raw dataset:")
 print("Dataset shape:", df_raw.shape)
 print("\nColumns:", list(df_raw.columns))
 print("\nMissing values per column:\n", df_raw.isnull().sum())
@@ -39,7 +41,8 @@ df["hit"] = (df["rating"] >= rating_cut) & (df["roi"] >= roi_cut)
 
 # AFTER CLEANING
 summary = {
-    "Rows": df.shape[0],
+    "9 columns added: numeric runtime, budget and income; month's number and decade; main genre; ROI, profit and HIT (boolean)"
+    "\nRows": df.shape[0],
     "Columns": df.shape[1],
     "Missing budgets": df["budget_num"].isna().sum(),
     "Missing incomes": df["income_num"].isna().sum(),
@@ -53,7 +56,7 @@ summary = {
     "Share of Hits (%)": round(100 * df["hit"].mean(), 1),
 }
 
-print("\n Summary:")
+print("\n Summary of cleaned dataset:")
 for k, v in summary.items():
     print(f"{k}: {v}")
 
@@ -68,6 +71,9 @@ df_metrics = pd.read_csv("data/Movies_metrics.csv")
 # Check if a movie in the dataset is a "hit"
 print("\n🎬 Welcome! Check if a movie is a hit!")
 print("Type a movie title to check it, or 'exit' to quit.\n")
+
+# Initialize the plotter
+plotter = MoviePlotter(df_metrics)
 
 # Initialize control variable
 is_found = False
@@ -105,23 +111,33 @@ while not is_found:
                 if 0 <= rating <= 10:
                     break
                 else:
-                    print("Rating must be between 0 and 10.")
+                    print("Rating must be between 0 and 10")
             except ValueError:
-                print("Please enter a valid number.")
+                print("Please enter a valid number")
 
         # Create the movie
         movie = Movie(title=user_input, budget=budget, income=income, rating=rating)
         print(f"\n✅ Movie: {movie.title}")
         movie.describe()
-        print("Yes! This movie is a HIT!" if movie.is_hit() else "Not quite a hit...")
+            
+        # Check if it’s a hit
+        if movie.is_hit():
+            feedback = "Yes! This movie is a HIT!"
+        else:
+            feedback = "This movie is not quite a HIT..."
+        
+        print(feedback)
 
+        # graphic summary
+        plotter.plot_movie_summary(movie, show=True, block=False)
+        plt.pause(0.1)
+        
         is_found = True
         continue
     
     # If found, create Movie object and show info
     row = match.iloc[0]
     movie = Movie.from_row(row)
-    
     print(f"\n✅ Found: {movie.title}")
     movie.describe()
     
@@ -129,9 +145,13 @@ while not is_found:
     if movie.is_hit():
         feedback = "Yes! This movie is a HIT!"
     else:
-        feedback = "Not quite a hit..."
+        feedback = "This movie is not quite a HIT..."
     
     print(feedback)
+    
+    # graphic summary
+    plotter.plot_movie_summary(movie, show=True, block=False)
+    plt.pause(0.1) 
     
     # End loop
     is_found = True
@@ -141,10 +161,6 @@ print("\n[info] Interactive loop finished. Starting plots...")
 
 
 ########## Plots
-from src.models import MoviePlotter
-
-# Initialize the plotter
-plotter = MoviePlotter(df_metrics)
 
 # 1. Distributions
 plotter.dist("rating")
@@ -154,14 +170,19 @@ plotter.dist("profit")
 # 2. Economic relationship
 plotter.scatter("budget_num", "income_num")
 
-# 3. Genre analysis
+# 3. Genre analysis: single + comparison
 plotter.box_by_genre("roi")
 plotter.box_by_genre("rating")
+plotter.box_by_genre("runtime_min")
+
+plotter.roi_vs_rating()
 
 # 4. Correlations
 plotter.corr_heatmap()
 
 # 5. Trends over time
-plotter.line_by_year("roi")
-plotter.line_by_year("rating")
+#line by year for ROI and rating excluded from the main (HIT covers both)
+plotter.hit_trend_over_time()
 
+#6. Film duration
+plotter.hit_by_runtime_bucket()
