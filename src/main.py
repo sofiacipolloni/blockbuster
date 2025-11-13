@@ -6,8 +6,8 @@ from matplotlib import pyplot as plt
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-# Import functions in processing.py
-from src.processing import run, find_movie, ask_float
+# Import functions and classes
+from src.processing import run, find_movie, ask_float, add_metrics
 from src.models import Movie, MoviePlotter
 
 
@@ -30,14 +30,7 @@ print("\nDataset information:", df_raw.info())
 
 
 # DEFINITION OF METRICS 
-# 1) Financial metrics - PROFIT and ROI
-df["profit"] = df["income_num"] - df["budget_num"]
-df["roi"] = df["income_num"] / df["budget_num"]  # >1 --> profitable; can be NaN/inf if budget is 0/NaN
-
-# 2) "Hit": top 25% by both rating and ROI
-rating_cut = df["rating"].quantile(0.75)
-roi_cut = df["roi"].quantile(0.75)
-df["hit"] = (df["rating"] >= rating_cut) & (df["roi"] >= roi_cut)
+df = add_metrics(df)
 
 # AFTER CLEANING
 summary = {
@@ -51,8 +44,8 @@ summary = {
     "Mean Profit ($M)": round(df["profit"].mean(skipna=True) / 1e6, 2),
     "Correlation Budget - Income": round(df[["budget_num", "income_num"]].corr().iloc[0,1], 2),
     "Correlation Runtime - Rating": round(df[["runtime_min", "rating"]].corr().iloc[0,1], 2) if "runtime_min" in df else None,
-    "Hit threshold (rating)": round(rating_cut, 2),
-    "Hit threshold (ROI)": round(roi_cut, 2),
+    "Hit threshold (rating)": round(df["rating"].quantile(0.75), 2),
+    "Hit threshold (ROI)": round(df["roi"].quantile(0.75), 2),
     "Share of Hits (%)": round(100 * df["hit"].mean(), 1),
 }
 

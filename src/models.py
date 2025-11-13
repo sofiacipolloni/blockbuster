@@ -8,10 +8,10 @@ class MoviePlotter:
     def __init__(self, df):
         self.df = df
 
-        # green theme for all plots
+        # Theme
         sns.set_theme(style="whitegrid", context="talk")
 
-        # palette (green shades)
+        # Palette (green)
         self.palette = {
             "main": "#2E8B57",   
             "light": "#6FBF73",  
@@ -40,55 +40,63 @@ class MoviePlotter:
         pal = dict(zip(levels, colors))
         return pal, levels
  
-    # Trimming deata to remove extreme outliers (not in 0–99th percentile)
+    # Trimming data to remove extreme outliers (not in 0–99th percentile)
     def trimmed(self, column):
         data = self.df[column].dropna()
         lower = data.quantile(0.01)
         upper = data.quantile(0.99)
         return data[(data >= lower) & (data <= upper)]
 
-    # Distribution of a single variable
-    def dist(self, column):
+    # 1. Distribution of a single variable
+    def dist(self, column, show=True):
         filtered = self.trimmed(column)
-        plt.figure(figsize=(7,5))
-        sns.histplot(filtered, kde=True, bins=40, color=self.palette["light"])
-        plt.title(f"Distribution of {column} (trimmed 1-99%)")
-        plt.xlabel(column)
-        plt.ylabel("Count")
-        plt.show()
+        fig, ax = plt.subplots(figsize=(7, 5))
+        sns.histplot(filtered, kde=True, bins=40, color=self.palette["light"], ax=ax)
+        ax.set_title(f"Distribution of {column} (trimmed 1–99%)")
+        ax.set_xlabel(column)
+        ax.set_ylabel("Count")
+        if show:
+            plt.show()
+        return fig, ax
 
     # Scatter plot between two variables
-    def scatter(self, x, y):
-        plt.figure(figsize=(7,5))
-        sns.scatterplot(data=self.df, x=x, y=y, color=self.palette["main"])
-        plt.title(f"{x} vs {y}")
-        plt.show()
+    def scatter(self, x, y, show=True):
+        fig, ax = plt.subplots(figsize=(7, 5))
+        sns.scatterplot(data=self.df, x=x, y=y, color=self.palette["main"], ax=ax)
+        ax.set_title(f"{x} vs {y}")
+        if show:
+            plt.show()
+        return fig, ax
 
     # Boxplot by genre 
-    def box_by_genre(self, column, genre_col="genre_main"):
+    def box_by_genre(self, column, genre_col="genre_main", show=True):
         if genre_col not in self.df.columns:
             print("Column 'genre_main' not found.")
             return
 
-        #create a smaller dataframe with genre and the selected (trimmed) column
-        trimmed_df = self.df[[genre_col, column]].dropna().copy() #drop missing values
+        # Drop missing values + trim 
+        trimmed_df = self.df[[genre_col, column]].dropna().copy() 
         filtered_values = self.trimmed(column)
         trimmed_df = trimmed_df[trimmed_df[column].isin(filtered_values)]
 
         #colors
-        levels = list(trimmed_df[genre_col].value_counts().index)  # ordina per frequenza
-        pal, _ = self._cat_palette(levels, cmap="crest")           # dict {genere: colore}
+        levels = list(trimmed_df[genre_col].value_counts().index)  
+        pal, _ = self._cat_palette(levels, cmap="crest")           
         colors = [pal[g] for g in levels] 
           
         #Plot
-        plt.figure(figsize=(10,5))
-        sns.boxplot(data=trimmed_df, x=genre_col, y=column, order=levels, palette=colors, showfliers=False)
-        plt.xticks(rotation=45)
-        plt.title(f"{column} by Genre (trimmed 1-99%)")
-        plt.show()
+        fig, ax = plt.subplots(figsize=(10, 5))
+        sns.boxplot(data=trimmed_df, x=genre_col, y=column,
+                    order=levels, palette=colors, showfliers=False, ax=ax)
+
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right")
+        ax.set_title(f"{column} by Genre (trimmed 1–99%)")
+        if show:
+            plt.show()
+        return fig, ax
     
     # ROI vs Rating map (by genre)
-    def roi_vs_rating(self, genre_col="genre_main"):
+    def roi_vs_rating(self, genre_col="genre_main", show=True):
 
         # Check required columns
         for c in ["roi", "rating", genre_col]:
@@ -96,47 +104,43 @@ class MoviePlotter:
                 print(f"Column '{c}' not found.")
                 return
 
-        # Drop missing values
-        trimmed_df_2 = self.df[[genre_col, "roi", "rating"]].dropna().copy()
-
-        # Trim extreme ROI values (using your helper)
-        trimmed_roi = self.trimmed("roi")
-        trimmed_df_2 = trimmed_df_2[trimmed_df_2["roi"].isin(trimmed_roi)]
-
-        # Optionally also trim rating to focus on the main range
-        trimmed_rating = self.trimmed("rating")
-        trimmed_df_2 = trimmed_df_2[trimmed_df_2["rating"].isin(trimmed_rating)]
+        # Drop missing values + trim ROI and Rating
+        trimmed_df = self.df[[genre_col, "roi", "rating"]].dropna().copy()
+        trimmed_df = trimmed_df[trimmed_df["roi"].isin(self.trimmed("roi"))]
+        trimmed_df = trimmed_df[trimmed_df["rating"].isin(self.trimmed("rating"))]
 
         # Plot
-        pal, _ = self._cat_palette(trimmed_df_2[genre_col], cmap="crest")  # one color per genre
+        pal, _ = self._cat_palette(trimmed_df[genre_col], cmap="crest")
 
-        plt.figure(figsize=(8,6))
-        sns.scatterplot(
-            data=trimmed_df_2, x="rating", y="roi", hue=genre_col,
-            palette=pal, alpha=0.7, s=55, edgecolor="white", linewidth=0.4
-        )
+        fig, ax = plt.subplots(figsize=(8, 6))
+        sns.scatterplot(data=trimmed_df, x="rating", y="roi",
+                        hue=genre_col, palette=pal,
+                        alpha=0.7, s=55, edgecolor="white", linewidth=0.4, ax=ax)
 
-        # Cap the y-axis to the 99th percentile to avoid scale distortion
-        plt.ylim(0, trimmed_df_2["roi"].quantile(0.99))
+        ax.set_ylim(0, trimmed_df["roi"].quantile(0.99))
+        ax.set_title("ROI vs Rating (trimmed 1–99%)")
+        ax.set_xlabel("Rating")
+        ax.set_ylabel("ROI")
+        ax.legend(title="Genre", bbox_to_anchor=(1.02, 1), loc="upper left")
 
-        plt.title("ROI vs Rating (trimmed 1-99%)")
-        plt.xlabel("Rating")
-        plt.ylabel("ROI")
-        plt.legend(title="Genre", bbox_to_anchor=(1.02, 1), loc="upper left")
-        plt.tight_layout()
-        plt.show()
+        if show:
+            plt.show()
+        return fig, ax
+
 
 
     # Correlation heatmap
-    def corr_heatmap(self):
+    def corr_heatmap(self, show=True):
         cols = ["budget_num", "income_num", "profit", "roi", "rating", "runtime_min"]
         cols = [c for c in cols if c in self.df.columns]
-        plt.figure(figsize=(8,6))
-        sns.heatmap(self.df[cols].corr(), annot=True, cmap="YlGnBu", center=0)
-        plt.title("Correlation Heatmap", fontsize=14)
-        plt.show()
+        fig, ax = plt.subplots(figsize=(8, 6))
+        sns.heatmap(self.df[cols].corr(), annot=True, cmap="YlGnBu", center=0, ax=ax)
+        ax.set_title("Correlation Heatmap")
+        if show:
+            plt.show()
+        return fig, ax
 
-    # Line plot over the years
+    # Line plot over the years - NOT STREAMLIT
     def line_by_year(self, y):
         data = self.df.groupby("year")[y].mean().reset_index()
         plt.figure(figsize=(9,5))
@@ -145,7 +149,7 @@ class MoviePlotter:
         plt.show()
     
     # Share of hits per year
-    def hit_trend_over_time(self, year_col="year", hit_col="hit"):
+    def hit_trend_over_time(self, year_col="year", hit_col="hit", show=True):
     
         if year_col not in self.df.columns or hit_col not in self.df.columns:
             print("Columns not found.")
@@ -157,18 +161,25 @@ class MoviePlotter:
         yearly = d.groupby(year_col)[hit_col].mean().reset_index()
         yearly[hit_col] = yearly[hit_col] * 100  # convert to %
 
-        plt.figure(figsize=(8,5))
-        sns.lineplot(data=yearly, x=year_col, y=hit_col, marker="o", linewidth=2.5, color=self.palette["main"],  
-                    markerfacecolor=self.palette["light"], markeredgecolor=self.palette["dark"], alpha=0.9)
-        plt.title("Share of 'Hit' Movies Over Time")
-        plt.xlabel("Year")
-        plt.ylabel("Share of Hits (%)")
-        plt.grid(True, alpha=0.3)
-        plt.tight_layout()
-        plt.show()
+        #Plot
+        fig, ax = plt.subplots(figsize=(8, 5))
+        sns.lineplot(data=yearly, x=year_col, y=hit_col,
+                     marker="o", linewidth=2.5,
+                     color=self.palette["main"],
+                     markerfacecolor=self.palette["light"],
+                     markeredgecolor=self.palette["dark"],
+                     alpha=0.9, ax=ax)
+
+        ax.set_title("Share of Hits Over Time")
+        ax.set_xlabel("Year")
+        ax.set_ylabel("Share of Hits (%)")
+        ax.grid(True, alpha=0.3)
+        if show:
+            plt.show()
+        return fig, ax
     
     # Share of hits per runtime
-    def hit_by_runtime_bucket(self, runtime_col: str = "runtime_min", hit_col: str = "hit"):
+    def hit_by_runtime_bucket(self, runtime_col: str = "runtime_min", hit_col: str = "hit", show=True):
 
         if runtime_col not in self.df.columns or hit_col not in self.df.columns:
             print("Columns not found.")
@@ -185,16 +196,19 @@ class MoviePlotter:
             .mean().mul(100).reset_index(name="hit_share")
         )
 
-        plt.figure(figsize=(7,5))
+        #Plot
+        fig, ax = plt.subplots(figsize=(7, 5))
         sns.barplot(data=share, x="runtime_bucket", y="hit_share",
-                    color=getattr(self, "palette", {}).get("main", "#2E8B57"))
-        plt.title("Share of Hits by Runtime Bucket")
-        plt.xlabel("Runtime (min, buckets)")
-        plt.ylabel("Share of Hits (%)")
-        plt.ylim(0, 100)
-        plt.grid(True, axis="y", alpha=0.25)
-        plt.tight_layout()
-        plt.show()
+                    color=self.palette["main"], ax=ax)
+
+        ax.set_title("Share of Hits by Runtime Bucket")
+        ax.set_xlabel("Runtime")
+        ax.set_ylabel("Share of Hits (%)")
+        ax.set_ylim(0, 100)
+        ax.grid(True, axis="y", alpha=0.25)
+        if show:
+            plt.show()
+        return fig, ax
    
     # Graphic summary for a single movie
     def plot_movie_summary(self, movie, show: bool = True, block: bool = False):

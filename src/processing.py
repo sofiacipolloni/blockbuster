@@ -3,6 +3,8 @@ import re
 import numpy as np
 from pathlib import Path
 
+
+
 #Loading the raw dataset
 def load_data(path: str = "data/movies.csv") -> pd.DataFrame:
     try:
@@ -170,7 +172,20 @@ def run(input_path: str = str(raw_path), output_path: str = str(clean_path)) -> 
     print("Done.")
     return df_raw, df
 
-#
+#"add_metrics" to create new metrics
+def add_metrics(df: pd.DataFrame) -> pd.DataFrame:
+    d = df.copy()
+    d["profit"] = d["income_num"] - d["budget_num"]
+    d["roi"] = d["income_num"] / d["budget_num"]
+
+    rating_cut = d["rating"].quantile(0.75)
+    roi_cut = d["roi"].quantile(0.75)
+    d["hit"] = (d["rating"] >= rating_cut) & (d["roi"] >= roi_cut)
+
+    return d
+
+
+
 # "find_movie" function to find a movie by title
 def find_movie(title, data):
     match = data[data["title"].str.lower() == title.lower()]
