@@ -33,23 +33,23 @@ blockbuster/
 # Goals
 The project investigates movie success from **two perspectives**:
 
-### Audience Success  
+### a. Audience Success  
 measured by **rating** (0–10 scale).
 
-### Financial Success  
+### b. Financial Success  
 measured by:
-- **profit** = income − budget  
-- **ROI - Return on Investments** = (income − budget) / budget
+- **profit**   
+- **ROI - Return on Investments** 
 
 ### Hit Definition  
 A movie is considered a **HIT** if:
 > **rating ≥ 75th percentile AND ROI ≥ 75th percentile**
 
-This allows the anaysis to capture the **top 25%** movies in both quality and profitability.
+This allows the analsis to capture the **top 25%** movies in both quality and profitability.
 
 ---
-**Project organization**
-## 1. Data Source & Libraries
+# Project organization
+# 1. Data Source & Libraries
 The dataset used in this project comes from **Kaggle**, downloaded as a CSV file and saved locally in the file:
 **data/movies.csv**
 This is a raw dataset of ~2000 movies, containing all original fields before any cleaning or processing.  
@@ -63,7 +63,7 @@ Cleaning and enrichment steps are implemented in **`processing.py`**:
 | Variable        | Description |
 |-----------------|-------------|
 | `profit`        | income − budget |
-| `roi`           | Return on Investment |
+| `roi`           | (income − budget) / budget |
 | `hit`           | boolean value based on 75th percentiles |
 | `runtime_min`   | runtime in minutes |
 | `budget_num`    | numeric budget |
@@ -78,14 +78,14 @@ The cleaned and enriched dataset has been saved as **Movies_metrics.csv** and us
 _(it requires class objects from **`models.py`**)_
 
 The analysis includes:
-### Post-cleaning summary
+### 1. Post-cleaning summary
 - mean rating,
 - median ROI,
 - mean profit,
 - share of hits in the dataset
 - hit thresholds.
 
-### Graphic visualizations 
+### 2. Graphic visualizations 
 - distributions (rating, profit, ROI with trimming),
 - budget vs income scatter,
 - boxplots by genre (rating, ROI, runtime),
@@ -94,30 +94,30 @@ The analysis includes:
 - hit percentage by year,
 - share of hits by runtime bucket.
 
-### Possibility to chech whether if a film (in the dataset or not) is classified as a HIT.
+### 3. Possibility to chech whether if a film (in the dataset or not) is classified as a HIT.
 
 ---
 
 # 4. Streamlit Web Application
 The web app (**`app.py`**) is organized in 4 different pages:
-### 1️⃣ Dataset Overview
+### 📊 Dataset Overview
 - variables listed in 2 columns
 - first rows of the dataset displayed
 - descriptive statistics for variables of interest.
 
-### 2️⃣ Check a Movie (from the dataset)
+### 🔎 Check a Movie (from the dataset)
 - user searches for a movie title
 - app displays:
   - rating, budget, income, profit, ROI
   - whether it is a **HIT** or not
   - a graphic summary.
 
-### 3️⃣ Custom Movie Simulator
+### 📝 Custom Movie Simulator
 - user inputs budget, income, and rating
 - app computes ROI and hit status
 - app displays a graphic summary.
 
-### 4️⃣ Global Visualizations
+### 📈 Global Visualizations
 - **scatter plots**  
   - Budget vs Income (with optional log scale)  
   - ROI (trimmed 1–99%) vs Rating
@@ -128,15 +128,15 @@ The web app (**`app.py`**) is organized in 4 different pages:
 - **trends over time**  
   mean rating, median ROI, median profit by year
 
-***Sidebar filters:***
-***- filter by genre,***
-***- show only hits,***
-***- choose sample size,***
-***- log scale***
+*Sidebar filters:*
+- *filter by genre,*
+- *show only hits,*
+- *choose sample size,*
+- *log scale*
 
 ---
 
-# 🔍 Key Findings
+# 📌 Key Findings
 Below, the _main_ insights on trends behind cinematic triumphs obtained from both the analyzed dataset in **`app.py`** and **`app.py`**.
 
 ### ⭐ How many hits?
@@ -145,7 +145,7 @@ Below, the _main_ insights on trends behind cinematic triumphs obtained from bot
 
 - **Average performance of hit movies - HIT THRESHOLDS**
 | Metric | Value |
-|-------|-------|
+|--------|-------|
 | **Median ROI of (hits)** | ~3.83 |
 | **Median rating (hits)** | ~7.3 / 10 |
 | **Median profit (hits)** | ~ 170($M) |
@@ -195,15 +195,15 @@ However, there is a positive relationship between “standard-length” films ba
 
 ▶️ ***How to Run the project***
 
-***1. Install all dependencies***
+***1. Install all dependencies:***
 _`pip install -r requirements.txt`_
 
-***2. Run data cleaning & metric creation***
+***2. Run data cleaning & metric creation:***
 _`python src/processing.py`_
 
-***3. Run the full analysis***
+***3. Run the full analysis:***
 _`python src/models.py`_
 _`python src/main.py`_
 
-***4. Launch the interactive web app***
+***4. Launch the interactive web app:***
 _`streamlit run app.py`_
