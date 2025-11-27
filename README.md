@@ -11,6 +11,7 @@ To explore this, the project includes:
 ---
 
 # 📁 Project Structure
+```text
 blockbuster/
 │
 ├── data/
@@ -27,7 +28,7 @@ blockbuster/
 ├── app.py                       ← Streamlit web application
 ├── requirements.txt             ← libraries required to run the project
 └── README.md
-
+```
 ---
 
 # Goals
@@ -143,12 +144,14 @@ Below, the _main_ insights on trends behind cinematic triumphs obtained from bot
 - **Number of hit movies:** ~10% of the dataset  
   (based on: ROI ≥ 75th percentile, rating ≥ 75th percentile)
 
-- **Average performance of hit movies - HIT THRESHOLDS**
-| Metric | Value |
-|--------|-------|
-| **Median ROI of (hits)** | ~3.83 |
-| **Median rating (hits)** | ~7.3 / 10 |
-| **Median profit (hits)** | ~ 170($M) |
+### Average performance of hit movies — HIT THRESHOLDS
+```markdown
+| Metric                     | Value     |
+|---------------------------|-----------|
+| **Median ROI (hits)**     | ~3.83     |
+| **Median rating (hits)**  | ~7.3 / 10 |
+| **Median profit (hits)**  | ~$170M    |
+```
 
 Hits systematically outperform non-hits on both ROI and rating (and on profit too).
 
