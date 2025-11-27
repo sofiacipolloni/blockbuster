@@ -1,9 +1,10 @@
-#Class for plots 
+#CLASS OBJECTS
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
 
+#Class for plots 
 class MoviePlotter:
     def __init__(self, df):
         self.df = df
@@ -59,7 +60,7 @@ class MoviePlotter:
             plt.show()
         return fig, ax
 
-    # Scatter plot between two variables
+    # Scatter plot between 2 variables
     def scatter(self, x, y, show=True):
         fig, ax = plt.subplots(figsize=(7, 5))
         sns.scatterplot(data=self.df, x=x, y=y, color=self.palette["main"], ax=ax)
@@ -74,7 +75,7 @@ class MoviePlotter:
             print("Column 'genre_main' not found.")
             return
 
-        # Drop missing values + trim 
+        # Drop missing values + trimming 
         trimmed_df = self.df[[genre_col, column]].dropna().copy() 
         filtered_values = self.trimmed(column)
         trimmed_df = trimmed_df[trimmed_df[column].isin(filtered_values)]
@@ -117,7 +118,9 @@ class MoviePlotter:
                         hue=genre_col, palette=pal,
                         alpha=0.7, s=55, edgecolor="white", linewidth=0.4, ax=ax)
 
-        ax.set_ylim(0, trimmed_df["roi"].quantile(0.99))
+        roi_low = trimmed_df["roi"].quantile(0.01)
+        roi_high = trimmed_df["roi"].quantile(0.99)
+        ax.set_ylim(roi_low, roi_high)
         ax.set_title("ROI vs Rating (trimmed 1–99%)")
         ax.set_xlabel("Rating")
         ax.set_ylabel("ROI")
@@ -140,7 +143,7 @@ class MoviePlotter:
             plt.show()
         return fig, ax
 
-    # Line plot over the years - NOT STREAMLIT
+    # Line plot over the years 
     def line_by_year(self, y):
         data = self.df.groupby("year")[y].mean().reset_index()
         plt.figure(figsize=(9,5))
@@ -174,6 +177,12 @@ class MoviePlotter:
         ax.set_xlabel("Year")
         ax.set_ylabel("Share of Hits (%)")
         ax.grid(True, alpha=0.3)
+        
+        #years as integers 
+        years = yearly[year_col].astype(int).unique()
+        ax.set_xticks(years)
+        ax.set_xticklabels(years, rotation=45)
+    
         if show:
             plt.show()
         return fig, ax
@@ -277,6 +286,9 @@ class MoviePlotter:
             plt.show(block=block)   #does not block the code when block=F
 
         return fig, (ax, ax2)
+
+
+
 
 # Class for analysis of a single movie
 class Movie:

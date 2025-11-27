@@ -1,6 +1,6 @@
+#FUNCTIONS
 import pandas as pd
 import re
-import numpy as np
 from pathlib import Path
 
 
@@ -11,7 +11,6 @@ def load_data(path: str = "data/movies.csv") -> pd.DataFrame:
         df = pd.read_csv(path)
         print(f"Dataset loaded successfully: {path}")
         print(f"Rows: {df.shape[0]}, Columns: {df.shape[1]}")
-        print(df.shape)
         return df
 
     except FileNotFoundError:
@@ -55,7 +54,6 @@ def _map_genres_string(raw: str) -> str | None:
     if pd.isna(raw):
         return None
     txt = str(raw).lower()
-    # normalize separators: ',', '|', '/', ';' -> ','
     txt = re.sub(r"[|/;]", ",", txt)
     tokens = [t.strip() for t in txt.split(",") if t.strip()]
     hits = set()
@@ -158,7 +156,6 @@ clean_path = Path("data/movies_clean.csv")
 
 # "run" function
 def run(input_path: str = str(raw_path), output_path: str = str(clean_path)) -> pd.DataFrame:
-    """Load -> clean -> save -> return cleaned DataFrame."""
     print(f"Loading raw dataset: {input_path}")
     df_raw = load_data(input_path)
 
@@ -172,11 +169,11 @@ def run(input_path: str = str(raw_path), output_path: str = str(clean_path)) -> 
     print("Done.")
     return df_raw, df
 
-#"add_metrics" to create new metrics
+#"add_metrics" function to create new metrics
 def add_metrics(df: pd.DataFrame) -> pd.DataFrame:
     d = df.copy()
     d["profit"] = d["income_num"] - d["budget_num"]
-    d["roi"] = d["income_num"] / d["budget_num"]
+    d["roi"] = (d["income_num"] - d["budget_num"]) / d["budget_num"]
 
     rating_cut = d["rating"].quantile(0.75)
     roi_cut = d["roi"].quantile(0.75)
@@ -185,11 +182,11 @@ def add_metrics(df: pd.DataFrame) -> pd.DataFrame:
     return d
 
 
-
 # "find_movie" function to find a movie by title
 def find_movie(title, data):
     match = data[data["title"].str.lower() == title.lower()]
     return match if not match.empty else None
+
 
 # "ask_float" function to recognize different numeric formats 
 def ask_float(prompt):

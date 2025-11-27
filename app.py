@@ -1,14 +1,11 @@
 #WEB APPLICATION 
 import streamlit as st
 from pathlib import Path
-import matplotlib.pyplot as plt
 import pandas as pd
 import altair as alt
 
-from src.processing import run, find_movie, ask_float, add_metrics
 from src.models import Movie, MoviePlotter
 
-# path al dataset con le metriche già calcolate
 data_path = Path("data/Movies_metrics.csv")
 
 @st.cache_data #doesn't reload it at every interaction
@@ -16,7 +13,6 @@ def load_metrics():
     df = pd.read_csv(data_path)
     return df
 
-# carica il dataframe e crea il plotter
 df = load_metrics()
 plotter = MoviePlotter(df)
 
@@ -26,29 +22,23 @@ st.subheader("What makes a movie a hit?")
 
 st.markdown(
     """
-    This web app uses your cleaned movie dataset to:
+    This web app allows you to:
     - check whether a movie is classified as a **hit** (based on ROI and rating)
-    - allow you to test custom movies
+    - test custom movies
     - explore some global visualizations
     """
 )
 
 # sidebar to move between sections
 st.sidebar.markdown("## 🧭 Navigation")
-
 options = {
     "Dataset overview": "📊 Dataset overview",
     "Check a movie": "🎬 Check a movie",
-    "Custom movie": "✨ Custom movie",
+    "Custom movie simulator": "✨ Custom movie simulator",
     "Global plots": "🌍 Global plots"
 }
 
-clicked = st.sidebar.radio(
-    "",
-    list(options.values())
-)
-
-# retrieve the clean page name (the dict key)
+clicked = st.sidebar.radio("",list(options.values()))
 page = [k for k, v in options.items() if v == clicked][0]
 
 
@@ -57,19 +47,12 @@ if page == "Dataset overview":
     st.header("📊 Dataset overview")
 
     st.write("Shape (rows, columns):", df.shape)
-    descriptions = {
-    "title":"Film title",
-    "rating": "Audience/Critic score (0–10)",
-    "ROI": "Return on Investment",
-    "profit": "Income minus budget",
-    "runtime_min": "Movie duration in minutes",
-    "genre_main": "Primary genre",
-}
+    
     #1
     st.markdown("### 📂 Column list")
     with st.expander("Show variables in the dataset"):
         cols = df.columns.tolist()
-        half = len(cols) // 2 + len(cols) % 2  # split in two almost equal parts
+        half = len(cols) // 2 + len(cols) % 2  # split in 2 cols
 
         left, right = st.columns(2)
 
@@ -100,7 +83,7 @@ elif page == "Check a movie":
     title_input = st.text_input("Write a movie title from the dataset:")
 
     if title_input:
-        # ricerca case-insensitive
+    
         match = df[df["title"].str.lower() == title_input.lower()]
 
         if match.empty:
@@ -114,22 +97,19 @@ elif page == "Check a movie":
             st.write(f"**ROI:** {movie.roi:.2f}×")
             st.write(f"**Profit ($):** {movie.profit:,.0f}")
 
-            # hit o non hit (usa la logica della classe Movie)
             if movie.is_hit():
                 st.success("🔥 This movie is classified as a **HIT**.")
             else:
                 st.warning("❌ This movie is **not** classified as a hit.")
 
-            # mini-grafico riassuntivo usando MoviePlotter
+            # graph
             st.markdown("**Visual summary (rating & ROI):**")
-
-            # ATTENZIONE: qui assumo che plot_movie_summary(movie, show=False)
-            # ritorni (fig, axes). Se al momento fa solo plt.show(), dovrai adattarla.
             fig, _ = plotter.plot_movie_summary(movie, show=False)
             st.pyplot(fig)
 
+
 ###################### Custom movie ######################
-elif page == "Custom movie":
+elif page == "Custom movie simulator":
     st.header("📝 Test a custom movie (not necessarily in the dataset)")
 
     custom_title = st.text_input("Movie title (custom):", value="My Movie")
@@ -140,7 +120,7 @@ elif page == "Custom movie":
     with col2:
         custom_income = st.number_input("Income ($)", min_value=0.0, step=1_000_000.0)
     with col3:
-        custom_rating = st.slider("Rating (0–10)", min_value=0.0, max_value=10.0, value=7.0, step=0.1)
+        custom_rating = st.slider("Rating (0-10)", min_value=0.0, max_value=10.0, value=7.0, step=0.1)
 
     if st.button("Check this custom movie"):
         movie = Movie(
@@ -150,27 +130,25 @@ elif page == "Custom movie":
             rating=custom_rating,
         )
 
-        st.write(f"**ROI:** {movie.roi:.2f}×")
+        st.write(f"**ROI:** {movie.roi:.2f}x")
         st.write(f"**Profit ($):** {movie.profit:,.0f}")
 
         if movie.is_hit():
-            st.success("🔥 This movie would be considered a **HIT** by your rule.")
+            st.success("🔥 This movie is/would be considered a **HIT**")
         else:
-            st.warning("❌ This movie would **not** be considered a hit.")
+            st.warning("❌ This movie is **not**/would **not** be considered a hit")
 
-        # grafico riassuntivo anche per il film custom
+        # graph
         fig, _ = plotter.plot_movie_summary(movie, show=False)
         st.pyplot(fig)
-        
+     
         
 ###################### Global plots ######################
 elif page == "Global plots":
     st.header("📈 Global visualizations")
 
-    # --------- Sidebar filters specific to this page ---------
+    # Sidebar filters 
     st.sidebar.subheader("Filters for global plots")
-
-    # Start from the full dataset
     d = df.copy()
 
     # 1) Genre filter
@@ -220,10 +198,10 @@ elif page == "Global plots":
 
     st.divider()
 
-    # ---------- Tabs ----------
+    # TABS 
     tab1, tab2, tab3, tab4 = st.tabs(["📈 Scatter", "📊 Distributions", "📆 Trends", "⏱️ Correlation & Runtime"])
 
-    # --- TAB 1: Scatter ---
+    # TAB 1: Scatter 
     with tab1:
         left, right = st.columns(2)
 
@@ -281,57 +259,66 @@ elif page == "Global plots":
             else:
                 st.info("Columns 'roi'/'rating' not available.")
 
-    # --- TAB 2: Distributions ---
+    # TAB 2: Distributions
     with tab2:
         left, right, extra = st.columns(3)
+        
+            # less than 5 films --> distribution plots not shown ()
+        if len(d) < 5:
+            st.info("Not enough data to display distribution plots. Please broaden the filters.")
+        else:
 
-        # ROI distribution (usa TUTTI i dati filtrati, NON il sample)
-        if "roi" in d.columns:
-            d_roi = d.dropna(subset=["roi"]).copy()
+            # ROI distribution 
+            if "roi" in d.columns:
+                d_roi = d.dropna(subset=["roi"]).copy()
 
-            if len(d_roi) > 0:
-                roi_low = float(d_roi["roi"].quantile(0.01))
-                roi_high = float(d_roi["roi"].quantile(0.99))
+                if len(d_roi) > 0:
+                    roi_low = float(d_roi["roi"].quantile(0.01))
+                    roi_high = float(d_roi["roi"].quantile(0.99))
 
-                # tieni solo ROI nel range 1–99% (così togli gli outlier assurdi)
-                d_roi = d_roi[(d_roi["roi"] >= roi_low) & (d_roi["roi"] <= roi_high)]
+                    d_roi = d_roi[(d_roi["roi"] >= roi_low) & (d_roi["roi"] <= roi_high)] # trimming  1–99% (no outliers)
+                    n_roi = len(d_roi)
+                    roi_bins = 10 if n_roi < 50 else 40
+                    
+                    roi_hist = alt.Chart(d_roi).mark_bar().properties(width=250, height=350).encode(
+                        x=alt.X(
+                            "roi:Q", bin=alt.Bin(maxbins=roi_bins), title="ROI (trimmed 1–99%)", scale=alt.Scale(domain=[roi_low, roi_high])
+                        ),
+                        y=alt.Y("count():Q", title="Count", axis=alt.Axis(tickMinStep=1)) #only integers
+                    )
+                    left.subheader("ROI")
+                    left.altair_chart(roi_hist, use_container_width=False)
+                else:
+                    left.info("No ROI values available with the current filters.")
 
-                roi_hist = alt.Chart(d_roi).mark_bar().encode(
-                    x=alt.X(
-                        "roi:Q",
-                        bin=alt.Bin(maxbins=40),
-                        title="ROI (trimmed 1–99%)",
-                        scale=alt.Scale(domain=[roi_low, roi_high])
-                    ),
-                    y=alt.Y("count():Q", title="Count")
-                )
-                left.subheader("ROI")
-                left.altair_chart(roi_hist, use_container_width=True)
-            else:
-                left.info("No ROI values available with the current filters.")
+            # Rating distribution
+            if "rating" in d.columns:
+                d_rating = d.dropna(subset=["rating"])
+                n_rating = len(d_rating)
+                rating_bins = 10 if n_rating < 50 else 30
+                
+                rating_hist = alt.Chart(d_rating).mark_bar().properties(width=250, height=350).encode(
+                    x=alt.X("rating:Q", bin=alt.Bin(maxbins=rating_bins), title="Rating"),
+                    y=alt.Y("count():Q", title="Count", axis=alt.Axis(tickMinStep=1))
+                    )
+                right.subheader("Rating")
+                right.altair_chart(rating_hist, use_container_width=False)
 
-        # Rating distribution
-        if "rating" in d.columns:
-            d_rating = d.dropna(subset=["rating"])
-            rating_hist = alt.Chart(d_rating).mark_bar().encode(
-                x=alt.X("rating:Q", bin=alt.Bin(maxbins=30), title="Rating"),
-                y=alt.Y("count():Q", title="Count")
-            )
-            right.subheader("Rating")
-            right.altair_chart(rating_hist, use_container_width=True)
+            # Profit distribution (in millions)
+            if "profit" in d.columns:
+                d_prof = d.dropna(subset=["profit"]).copy()
+                d_prof["profit_million"] = d_prof["profit"] / 1e6
+                n_prof = len(d_prof)
+                prof_bins = 10 if n_prof < 50 else 40
+                
+                prof_hist = alt.Chart(d_prof).mark_bar().properties(width=250, height=350).encode(
+                    x=alt.X("profit_million:Q", bin=alt.Bin(maxbins=prof_bins), title="Profit ($M)"),
+                    y=alt.Y("count():Q", title="Count", axis=alt.Axis(tickMinStep=1))
+                    )
+                extra.subheader("Profit ($M)")
+                extra.altair_chart(prof_hist, use_container_width=False)
 
-        # Profit distribution (in millions)
-        if "profit" in d.columns:
-            d_prof = d.dropna(subset=["profit"]).copy()
-            d_prof["profit_million"] = d_prof["profit"] / 1e6
-            prof_hist = alt.Chart(d_prof).mark_bar().encode(
-                x=alt.X("profit_million:Q", bin=alt.Bin(maxbins=40), title="Profit ($M)"),
-                y=alt.Y("count():Q", title="Count")
-            )
-            extra.subheader("Profit ($M)")
-            extra.altair_chart(prof_hist, use_container_width=True)
-
-    # --- TAB 3: Trends ---
+    # TAB 3: Trends 
     with tab3:
         st.subheader("Metric by Year")
 
@@ -364,8 +351,26 @@ elif page == "Global plots":
                 st.altair_chart(line, use_container_width=True)
         else:
             st.info("Column 'year' not available.")
+        
+        # Share of hits over time
+        if {"year", "hit"}.issubset(d.columns):
+            st.subheader("Share of hits over time")
+            d_year = d.dropna(subset=["year", "hit"]).copy()
+            d_year = (
+                d_year.groupby("year")["hit"]
+                    .mean().mul(100)
+                    .reset_index()
+            )
 
-     # --- TAB 4: Correlation & Runtime Analysis ---
+            line = alt.Chart(d_year).mark_line(point=True).encode(
+                x=alt.X("year:Q", title="Year", axis=alt.Axis(format="d")),
+                y=alt.Y("hit:Q", title="Share of hits (%)"),
+                tooltip=["year:Q", alt.Tooltip("hit:Q", format=".1f")]
+            )
+            
+            st.altair_chart(line, use_container_width=True)
+
+     # TAB 4: Correlation & Runtime Analysis 
     with tab4:
         st.subheader("🔄 Correlation heatmap")
 
