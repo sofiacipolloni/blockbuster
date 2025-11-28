@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 # Import functions and classes
-from src.processing import run, find_movie, ask_float, add_metrics
+from src.processing import run, find_movie, ask_float, add_metrics, save_fig
 from src.models import Movie, MoviePlotter
 
 
@@ -128,26 +128,42 @@ print("\n[info] Interactive loop finished. Starting plots...")
 
 
 ########## Plots
+
 # 1. Distributions
-plotter.dist("rating")
-plotter.dist("roi")
-plotter.dist("profit") #?
+fig, _ = plotter.dist("rating", show=False)
+save_fig(fig, "dist_rating")
+
+fig, _ = plotter.dist("roi", show=False)
+save_fig(fig, "dist_roi")
+
+fig, _ = plotter.dist("profit", show=False)
+save_fig(fig, "dist_profit")
 
 # 2. Economic relationship
-plotter.scatter("budget_num", "income_num") #?
+fig, _ = plotter.scatter("budget_num", "income_num", log=True, show=False)
+save_fig(fig, "scatter_budget_income")
 
-# 3. Genre analysis: single + comparison
-plotter.box_by_genre("roi")
-plotter.box_by_genre("rating")
-plotter.box_by_genre("runtime_min") #?
+# 3. Genre analysis
+fig, _ = plotter.box_by_genre("roi", show=False)
+save_fig(fig, "boxplot_roi_by_genre")
 
-plotter.roi_vs_rating()
+fig, _ = plotter.box_by_genre("rating", show=False)
+save_fig(fig, "boxplot_rating_by_genre")
+
+fig, _ = plotter.box_by_genre("runtime_min", show=False)
+save_fig(fig, "boxplot_runtime_by_genre")
+
+fig, _ = plotter.roi_vs_rating(show=False)
+save_fig(fig, "roi_vs_rating")
 
 # 4. Correlations
-plotter.corr_heatmap()
+fig, _ = plotter.corr_heatmap(show=False)
+save_fig(fig, "correlation_heatmap")
 
 # 5. Trends over time
-plotter.hit_trend_over_time()
+fig, _ = plotter.hit_trend_over_time(show=False)
+save_fig(fig, "hit_trend_over_time")
 
-#6. Film duration
-plotter.hit_by_runtime_bucket()
+# 6. Film duration
+fig, _ = plotter.hit_by_runtime_bucket(show=False)
+save_fig(fig, "hit_by_runtime_bucket")
