@@ -6,6 +6,21 @@ import numpy as np
 
 #Class for plots 
 class MoviePlotter:
+    """A visualization utility class for generating plots from the movie dataset.
+    This class includes:
+        - Distribution plots 
+        - Scatter plots between variables
+        - Boxplots grouped by genre
+        - ROI vs Rating maps
+        - Correlation heatmaps
+        - Yearly trends (profit, rating, ROI, hit share)
+        - Runtime-hit analysis
+        - Summary visualizations for single movies
+
+    Attributes:
+        df (pd.DataFrame): The movie dataset.
+        palette (dict): Custom color palette for consistent plot styling.
+    """
     def __init__(self, df):
         self.df = df
 
@@ -61,10 +76,19 @@ class MoviePlotter:
         return fig, ax
 
     # Scatter plot between 2 variables
-    def scatter(self, x, y, show=True):
+    def scatter(self, x, y, log=False, show=True):
         fig, ax = plt.subplots(figsize=(7, 5))
         sns.scatterplot(data=self.df, x=x, y=y, color=self.palette["main"], ax=ax)
         ax.set_title(f"{x} vs {y}")
+        # Log scale option
+        if log:
+            ax.set_xscale("log")
+            ax.set_yscale("log")
+            ax.set_xlabel(f"{x} (log scale)")
+            ax.set_ylabel(f"{y} (log scale)")
+        else:
+            ax.set_xlabel(x)
+            ax.set_ylabel(y)
         if show:
             plt.show()
         return fig, ax
@@ -236,7 +260,6 @@ class MoviePlotter:
         # Palette
         main  = getattr(self, "palette", {}).get("main",  "#2E8B57")
         light = getattr(self, "palette", {}).get("light", "#6FBF73")
-        dark  = getattr(self, "palette", {}).get("dark",  "#1B5E20")
 
         fig, ax = plt.subplots(figsize=(7, 3.8))
 
@@ -292,6 +315,15 @@ class MoviePlotter:
 
 # Class for analysis of a single movie
 class Movie:
+    """A class representing an individual movie with basic financial and rating information.
+    Attributes:
+        title (str): Movie title.
+        budget (float): Production budget.
+        income (float): Box office income.
+        rating (float): IMDb rating.
+        profit (float): (income - budget).
+        roi (float | None): Return on investment (profit / budget), or None if budget ≤ 0.
+    """
     def __init__(self, title, budget, income, rating):
         self.title = title
         self.budget = budget
