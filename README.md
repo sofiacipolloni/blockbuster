@@ -57,7 +57,7 @@ This allows the analysis to capture the **top 25%** movies in both quality and p
 # Project organization
 # 1. Data Source & Libraries
 The dataset used in this project comes from **Kaggle**, downloaded as a CSV file and saved locally in the file:
-**data/movies.csv**.
+**data/movies.csv**. <br>
 This is a raw dataset of ~2000 movies, containing all original fields before any cleaning or processing.  
 
 All libraries required to run the project — including `pandas`, `numpy`, `matplotlib`, `seaborn`, `altair`, and `streamlit` — are listed in the file **`requirements.txt`**
@@ -121,8 +121,8 @@ The web app (**`app.py`**) is organized in 4 different pages:
 ### 📝 Custom Movie Simulator
 - user inputs budget, income, and rating
 - app computes ROI and hit status
-- app displays a graphic summary
-It's useful:  
+- app displays a graphic summary <br>
+It's useful: <br>
 - to evaluate how different budget, income, and rating combinations affect hit classification;
 - for film makers, to explore “what-if” scenarios based on estimated performances.
 
