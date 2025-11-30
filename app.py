@@ -8,8 +8,13 @@ from src.models import Movie, MoviePlotter
 
 data_path = Path("data/Movies_metrics.csv")
 
-@st.cache_data #doesn't reload it at every interaction
+@st.cache_data 
 def load_metrics():
+    """Loads the pre-computed metrics dataset used by the web app.
+    The function is cached, meaning Streamlit won't reload it at every interaction (improved performance).
+    Returns:
+        pd.DataFrame: The dataset containing cleaned data and metrics.
+    """
     df = pd.read_csv(data_path)
     return df
 
@@ -23,7 +28,7 @@ st.subheader("What makes a movie a hit?")
 st.markdown(
     """
     This web app allows you to:
-    - check whether a movie is classified as a **hit** (based on ROI and rating)
+    - check whether a movie is classified as a **HIT** (based on ROI and rating)
     - test custom movies
     - explore some global visualizations
     """
@@ -100,7 +105,7 @@ elif page == "Check a movie":
             if movie.is_hit():
                 st.success("🔥 This movie is classified as a **HIT**.")
             else:
-                st.warning("❌ This movie is **not** classified as a hit.")
+                st.warning("❌ This movie is **not** classified as a HIT.")
 
             # graph
             st.markdown("**Visual summary (rating & ROI):**")
@@ -136,7 +141,7 @@ elif page == "Custom movie simulator":
         if movie.is_hit():
             st.success("🔥 This movie is/would be considered a **HIT**")
         else:
-            st.warning("❌ This movie is **not**/would **not** be considered a hit")
+            st.warning("❌ This movie is **not**/**would not** be considered a HIT")
 
         # graph
         fig, _ = plotter.plot_movie_summary(movie, show=False)
@@ -166,7 +171,7 @@ elif page == "Global plots":
         if only_hits:
             d = d[d["hit"] == True]
 
-    # 3) Slider: how many movies to use (for scatter / distributions)
+    # 3) Slider: how many movies to use (for scatter plots)
     max_n = len(d)
 
     if max_n == 0:
@@ -180,7 +185,7 @@ elif page == "Global plots":
     else:
         # min=1, max = all filtered films
         n_movies = st.sidebar.slider(
-            "Number of movies to display (sampled)",
+            "Number of movies to display in scatter plots (sampled)",
             min_value=1,
             max_value=max_n,
             value=min(500, max_n),
@@ -198,6 +203,7 @@ elif page == "Global plots":
 
     st.divider()
 
+
     # TABS 
     tab1, tab2, tab3, tab4 = st.tabs(["📈 Scatter", "📊 Distributions", "📆 Trends", "⏱️ Correlation & Runtime"])
 
@@ -212,16 +218,8 @@ elif page == "Global plots":
                 d_money = d_sample.dropna(subset=["budget_num", "income_num"]).copy()
 
                 chart = alt.Chart(d_money).mark_circle(size=45, opacity=0.6).encode(
-                    x=alt.X(
-                        "budget_num:Q",
-                        title="Budget",
-                        scale=alt.Scale(type="log") if log_money else alt.Undefined
-                    ),
-                    y=alt.Y(
-                        "income_num:Q",
-                        title="Income",
-                        scale=alt.Scale(type="log") if log_money else alt.Undefined
-                    ),
+                    x=alt.X("budget_num:Q",title="Budget",scale=alt.Scale(type="log") if log_money else alt.Undefined),
+                    y=alt.Y("income_num:Q",title="Income",scale=alt.Scale(type="log") if log_money else alt.Undefined),
                     color=alt.Color("hit:N", legend=alt.Legend(title="Hit")) if "hit" in d_money.columns else alt.value("#2E8B57"),
                     tooltip=["title:N", "genre_main:N", "year:Q", "budget_num:Q", "income_num:Q", "roi:Q", "rating:Q"]
                 ).interactive()
@@ -240,11 +238,7 @@ elif page == "Global plots":
                     roi_high = float(d_roi_scatter["roi"].quantile(0.99))
 
                     chart = alt.Chart(d_roi_scatter).mark_circle(size=45, opacity=0.6).encode(
-                        x=alt.X(
-                            "roi:Q",
-                            title="ROI",
-                            scale=alt.Scale(domain=[roi_low, roi_high])
-                        ),
+                        x=alt.X("roi:Q",title="ROI",scale=alt.Scale(domain=[roi_low, roi_high])),
                         y=alt.Y("rating:Q", title="Rating"),
                         color=alt.Color(
                             "genre_main:N",
@@ -257,13 +251,13 @@ elif page == "Global plots":
                 else:
                     st.info("No data available for ROI vs Rating with current filters.")
             else:
-                st.info("Columns 'roi'/'rating' not available.")
+                st.info("Columns 'ROI'/'rating' not available.")
 
     # TAB 2: Distributions
     with tab2:
         left, right, extra = st.columns(3)
         
-            # less than 5 films --> distribution plots not shown ()
+        # Show plot only if enough data
         if len(d) < 5:
             st.info("Not enough data to display distribution plots. Please broaden the filters.")
         else:
@@ -281,9 +275,7 @@ elif page == "Global plots":
                     roi_bins = 10 if n_roi < 50 else 40
                     
                     roi_hist = alt.Chart(d_roi).mark_bar().properties(width=250, height=350).encode(
-                        x=alt.X(
-                            "roi:Q", bin=alt.Bin(maxbins=roi_bins), title="ROI (trimmed 1–99%)", scale=alt.Scale(domain=[roi_low, roi_high])
-                        ),
+                        x=alt.X("roi:Q", bin=alt.Bin(maxbins=roi_bins), title="ROI (trimmed 1–99%)", scale=alt.Scale(domain=[roi_low, roi_high])),
                         y=alt.Y("count():Q", title="Count", axis=alt.Axis(tickMinStep=1)) #only integers
                     )
                     left.subheader("ROI")
@@ -331,13 +323,8 @@ elif page == "Global plots":
                 # aggregation rule
                 agg = "median" if metric in ["roi", "profit"] else "mean"
 
-                ts = (
-                    d.dropna(subset=["year", metric])
-                     .groupby("year")[metric]
-                     .agg(agg)
-                     .reset_index()
-                     .sort_values("year")
-                )
+                ts = (d.dropna(subset=["year", metric]).groupby("year")[metric]
+                     .agg(agg).reset_index().sort_values("year"))
 
                 line = alt.Chart(ts).mark_line(point=True).encode(
                     x=alt.X("year:Q", title="Year", axis=alt.Axis(format="d")),
@@ -356,19 +343,20 @@ elif page == "Global plots":
         if {"year", "hit"}.issubset(d.columns):
             st.subheader("Share of hits over time")
             d_year = d.dropna(subset=["year", "hit"]).copy()
-            d_year = (
-                d_year.groupby("year")["hit"]
-                    .mean().mul(100)
-                    .reset_index()
-            )
-
-            line = alt.Chart(d_year).mark_line(point=True).encode(
-                x=alt.X("year:Q", title="Year", axis=alt.Axis(format="d")),
-                y=alt.Y("hit:Q", title="Share of hits (%)"),
-                tooltip=["year:Q", alt.Tooltip("hit:Q", format=".1f")]
-            )
             
-            st.altair_chart(line, use_container_width=True)
+            # Show plot only if enough data
+            if len(d_year) == 0 or d_year["hit"].sum() == 0:
+                st.info("No HITs available for this genre with the current filters.")
+            else:
+                d_year = (d_year.groupby("year")["hit"].mean().mul(100).reset_index())
+
+                line = alt.Chart(d_year).mark_line(point=True).encode(
+                    x=alt.X("year:Q", title="Year", axis=alt.Axis(format="d")),
+                    y=alt.Y("hit:Q", title="Share of hits (%)"),
+                    tooltip=["year:Q", alt.Tooltip("hit:Q", format=".1f")]
+                )
+                
+                st.altair_chart(line, use_container_width=True)
 
      # TAB 4: Correlation & Runtime Analysis 
     with tab4:
@@ -378,38 +366,35 @@ elif page == "Global plots":
         corr_cols = [c for c in ["budget_num", "income_num", "profit", "roi", "rating", "runtime_min"]
                      if c in d.columns]
 
+        # Show plot only if enough data
         if len(corr_cols) < 2:
             st.info("Not enough numeric columns available to compute correlations.")
         else:
-            corr_df = d[corr_cols].dropna().corr()
-
-            # Convert correlation matrix to long format
-            corr_long = (
-                corr_df
-                .reset_index()
-                .melt(id_vars="index", var_name="variable2", value_name="corr")
-                .rename(columns={"index": "variable1"})
-            )
-
-            heatmap = (
-                alt.Chart(corr_long)
-                .mark_rect()
-                .encode(
-                    x=alt.X("variable1:O", title=""),
-                    y=alt.Y("variable2:O", title=""),
-                    color=alt.Color("corr:Q",
-                                    scale=alt.Scale(scheme="blueorange", domain=(-1, 1))),
-                    tooltip=[
-                        alt.Tooltip("variable1:N", title="Variable 1"),
-                        alt.Tooltip("variable2:N", title="Variable 2"),
-                        alt.Tooltip("corr:Q", format=".2f", title="Correlation"),
-                    ],
+            valid_corr_data = d[corr_cols].dropna()
+            if len(valid_corr_data) < 2:
+                st.info("Not enough data to compute correlations with the current filters.")
+            else:
+                corr_df = valid_corr_data.corr()
+                # Convert correlation matrix to long format
+                corr_long = (corr_df.reset_index().melt(id_vars="index", var_name="variable2", value_name="corr")
+                    .rename(columns={"index": "variable1"})
                 )
-                .properties(width=450, height=450)
-            )
 
-            st.altair_chart(heatmap, use_container_width=True)
+                heatmap = (alt.Chart(corr_long).mark_rect().encode(
+                        x=alt.X("variable1:O", title=""),
+                        y=alt.Y("variable2:O", title=""),
+                        color=alt.Color("corr:Q",
+                                        scale=alt.Scale(scheme="blueorange", domain=(-1, 1))),
+                        tooltip=[
+                            alt.Tooltip("variable1:N", title="Variable 1"),
+                            alt.Tooltip("variable2:N", title="Variable 2"),
+                            alt.Tooltip("corr:Q", format=".2f", title="Correlation"),
+                        ],
+                    )
+                    .properties(width=450, height=450)
+                )
 
+                st.altair_chart(heatmap, use_container_width=True)
 
 
         st.markdown("---")
@@ -420,34 +405,28 @@ elif page == "Global plots":
             bins = [0, 90, 110, 130, 150, 1_000]
             labels = ["<90", "90–110", "110–130", "130–150", "≥150"]
             d_rt = d.dropna(subset=["runtime_min", "hit"]).copy()
-            d_rt["runtime_bucket"] = pd.cut(
-                d_rt["runtime_min"], bins=bins, labels=labels, right=False, ordered=True
-            )
-
-            # Share of hit per bucket
-            share = (
-                d_rt.groupby("runtime_bucket")["hit"]
-                .mean()
-                .mul(100)
-                .reset_index()
-            )
-
-            # Graph
-            chart = (
-                alt.Chart(share)
-                .mark_bar()
-                .encode(
-                    x=alt.X("runtime_bucket:N", sort=labels, title="Runtime bucket"),
-                    y=alt.Y("hit:Q", title="Hit share (%)"),
-                    color=alt.Color("hit:Q", scale=alt.Scale(scheme="yellowgreenblue"), legend=None),
-                    tooltip=["runtime_bucket:N", alt.Tooltip("hit:Q", format=".1f")]
+            
+            # Show plot only if enough data
+            if len(d_rt) == 0 or d_rt["hit"].sum() == 0:
+                st.info("No HITs available for this genre with the current filters.")
+            else:
+                d_rt["runtime_bucket"] = pd.cut(
+                    d_rt["runtime_min"], bins=bins, labels=labels, right=False, ordered=True
                 )
-                .properties(height=300)
-            )
 
-            st.altair_chart(chart, use_container_width=True)
+                # Share of hit per bucket
+                share = (d_rt.groupby("runtime_bucket")["hit"].mean().mul(100).reset_index())
+
+                # Graph
+                chart = ( alt.Chart(share).mark_bar().properties(height=300).encode(
+                        x=alt.X("runtime_bucket:N", sort=labels, title="Runtime bucket"),
+                        y=alt.Y("hit:Q", title="Hit share (%)"),
+                        color=alt.Color("hit:Q", scale=alt.Scale(scheme="yellowgreenblue"), legend=None),
+                        tooltip=["runtime_bucket:N", alt.Tooltip("hit:Q", format=".1f")])
+                )
+                st.altair_chart(chart, use_container_width=True)
 
         else:
-            st.info("Columns 'runtime_min' and 'hit' not available.")
-                
-    st.caption("Tip: use the filters in the sidebar and the log scale to explore money-related patterns.")
+            st.info("Columns 'runtime_min' and 'HIT' not available.")
+                    
+st.caption("Tip: use the filters in the sidebar and the log scale to explore money-related patterns.")

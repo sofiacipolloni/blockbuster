@@ -167,18 +167,10 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
     if "genre" in d.columns:
     # Apply both cleaning and main-genre extraction at once
         d["genre_main"] = d["genre"].apply(lambda x: _pick_main(_map_genres_string(x)))
-
-        print("\nSample genres (raw → main):")
-        print(d[["genre", "genre_main"]])
-
-        # Number of movies per main genre
-        print("\nMovies per main genre:")
-        print(d["genre_main"].value_counts(dropna=True).head(20))
-        
     return d
 
 
-# New clean dataset
+# "save" function for new datasets
 def save_clean(df, path="data/movies_clean.csv") -> None:
     """Saves a dataframe to disk as a CSV file.
     Args:
@@ -186,7 +178,6 @@ def save_clean(df, path="data/movies_clean.csv") -> None:
         path (str): Output file path.
     """
     df.to_csv(path, index=False)
-    print(f"Saved cleaned data to {path}")
 
 
 
@@ -209,14 +200,13 @@ def run(input_path: str = str(raw_path), output_path: str = str(clean_path)) -> 
     print("Cleaning...")
     df = clean(df_raw)
 
-    print(f"Saving cleaned dataset to: {output_path}")
+    print(f"Saved cleaned dataset to: {output_path}")
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     save_clean(df, output_path)
 
-    print("Done.")
     return df_raw, df
 
-#"add_metrics" function to create new metrics
+#"add_metrics" function to create new financial metrics
 def add_metrics(df: pd.DataFrame) -> pd.DataFrame:
     """Adds financial metrics (profit, ROI, hit flag) to the dataset.
     The hit variable is defined using the 75th percentile of rating and ROI.
@@ -232,7 +222,14 @@ def add_metrics(df: pd.DataFrame) -> pd.DataFrame:
     rating_cut = d["rating"].quantile(0.75)
     roi_cut = d["roi"].quantile(0.75)
     d["hit"] = (d["rating"] >= rating_cut) & (d["roi"] >= roi_cut)
-
+    
+    print("Adding financial metrics to the cleaned dataset")
+    
+    enriched_path = Path("data/Movies_metrics.csv")
+    save_clean(d, path=str(enriched_path))   
+    print(f"Saved cleaned and enriched dataset to: {enriched_path}")
+    
+    print("Done.")
     return d
 
 
@@ -274,5 +271,5 @@ output_dir = Path("outputs/figures")
 output_dir.mkdir(parents=True, exist_ok=True)
 
 def save_fig(fig, name: str):
-    """Saves a matplotlib figure into the output folder."""
+    """Saves a figure (graph) into the output folder."""
     fig.savefig(output_dir / f"{name}.png", dpi=300, bbox_inches="tight")

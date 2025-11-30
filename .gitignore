@@ -1,4 +1,28 @@
-# Ignore all data files
-data/*
-#Keep the empty folder itself
-!data/.gitkeep
+# Python cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.venv/
+.env/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# VS Code folders
+.vscode/
+
+# macOS system files
+.DS_Store
+
+# Streamlit internal files
+.streamlit/
+
+# ignore .png figures, keep "output" folder itself
+outputs/figures/*.png 
+
+# Logs
+*.log

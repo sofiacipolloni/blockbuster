@@ -3,9 +3,9 @@ This project analyzes a large movie dataset to answer a key question:
 
 ## **🔥 What makes a movie a HIT — both financially and for audiences**
 
-To explore this, the project includes:
-- full data cleaning and metric creation (profit, ROI, hit),
-- exploratory visualizations,
+To explore this, the study includes:
+- full data cleaning and metric creation (profit, ROI, hit);
+- exploratory visualizations;
 - an interactive **Streamlit web application**.
 
 ---
@@ -19,6 +19,9 @@ blockbuster/
 │   ├── movies_clean.csv         ← cleaned dataset
 │   └── Movies_metrics.csv       ← cleaned & enriched dataset (financial metrics)
 │
+├── outputs/figures              ← folder included in the repository
+│   └── ...                      ← global plots (11) excluded via .gitignore
+│ 
 ├── src/
 │   ├── __init__.py
 │   ├── processing.py            ← functions: loading, cleaning, metric creation
@@ -27,6 +30,8 @@ blockbuster/
 │
 ├── app.py                       ← Streamlit web application
 ├── requirements.txt             ← libraries required to run the project
+├── LICENSE
+├── .gitignore
 └── README.md
 ```
 ---
@@ -35,7 +40,7 @@ blockbuster/
 The project investigates movie success from **two perspectives**:
 
 ### a. Audience Success  
-measured by **rating** (0–10 scale).
+measured by **rating** (0–10 scale)
 
 ### b. Financial Success  
 measured by:
@@ -46,13 +51,13 @@ measured by:
 A movie is considered a **HIT** if:
 > **rating ≥ 75th percentile AND ROI ≥ 75th percentile**
 
-This allows the analsis to capture the **top 25%** movies in both quality and profitability.
+This allows the analysis to capture the **top 25%** movies in both quality and profitability.
 
 ---
 # Project organization
 # 1. Data Source & Libraries
 The dataset used in this project comes from **Kaggle**, downloaded as a CSV file and saved locally in the file:
-**data/movies.csv**
+**data/movies.csv**.
 This is a raw dataset of ~2000 movies, containing all original fields before any cleaning or processing.  
 
 All libraries required to run the project — including `pandas`, `numpy`, `matplotlib`, `seaborn`, `altair`, and `streamlit` — are listed in the file **`requirements.txt`**
@@ -80,22 +85,22 @@ _(it requires class objects from **`models.py`**)_
 
 The analysis includes:
 ### 1. Post-cleaning summary
-- mean rating,
-- median ROI,
-- mean profit,
-- share of hits in the dataset
+- mean rating;
+- median ROI;
+- mean profit;
+- share of hits;
 - hit thresholds.
 
 ### 2. Graphic visualizations 
-- distributions (rating, profit, ROI with trimming),
-- budget vs income scatter,
-- boxplots by genre (rating, ROI, runtime),
-- ROI vs Rating by genre,
-- correlation heatmap,
-- hit percentage by year,
+- distributions (rating, profit, ROI with trimming);
+- budget vs income scatter plot;
+- boxplots by genre (rating, ROI, runtime);
+- ROI vs Rating by genre;
+- correlation heatmap;
+- hit percentage by year;
 - share of hits by runtime bucket.
 
-### 3. Possibility to chech whether if a film (in the dataset or not) is classified as a HIT.
+### 3. Possibility to chech whether a film (in the dataset or not) is classified as a HIT or not.
 
 ---
 
@@ -104,41 +109,48 @@ The web app (**`app.py`**) is organized in 4 different pages:
 ### 📊 Dataset Overview
 - variables listed in 2 columns
 - first rows of the dataset displayed
-- descriptive statistics for variables of interest.
+- descriptive statistics for variables of interest
 
 ### 🔎 Check a Movie (from the dataset)
 - user searches for a movie title
 - app displays:
   - rating, budget, income, profit, ROI
   - whether it is a **HIT** or not
-  - a graphic summary.
+  - a graphic summary
 
 ### 📝 Custom Movie Simulator
 - user inputs budget, income, and rating
 - app computes ROI and hit status
-- app displays a graphic summary.
+- app displays a graphic summary
+It's useful:  
+- to evaluate how different budget, income, and rating combinations affect hit classification;
+- for film makers, to explore “what-if” scenarios based on estimated performances.
 
 ### 📈 Global Visualizations
-- **scatter plots**  
-  - Budget vs Income (with optional log scale)  
+- **Scatter plots**  
+  - Budget vs Income (with optional log-scale)  
   - ROI (trimmed 1–99%) vs Rating
-- **distributions**  
-  - rating  
+- **Distributions**  
+  - Rating  
   - ROI (trimmed 1–99%)  
-  - profit
-- **trends over time**  
-  mean rating, median ROI, median profit by year
+  - Profit
+- **Trends over time**  
+  - mean rating, median ROI, median profit (by year)
+  - share of hits (by year)
+- **Correlation and runtime**  
+  - Correlation heatmap
+  - Hit share by runtime bucket
 
 *Sidebar filters:*
-- *filter by genre,*
-- *show only hits,*
-- *choose sample size,*
-- *log scale*
+- *filter by genre*
+- *show only hits*
+- *choose sample size*
+- *log-scale*
 
 ---
 
 # 📌 Key Findings
-Below, the _main_ insights on trends behind cinematic triumphs obtained from both the analyzed dataset in **`app.py`** and **`app.py`**.
+Below, the _main_ insights on trends behind cinematic triumphs obtained from the analyzed dataset in both **`main.py`** and **`app.py`**.
 
 ### ⭐ How many hits?
 - **Number of hit movies:** ~10% of the dataset  
@@ -157,7 +169,7 @@ Hits systematically outperform non-hits on both ROI and rating (and on profit to
 ---
 
 ###  Genre patterns
-Some genres show a higher probability of producing hits.
+Some genres show a higher probability of producing hits:
 - **Action and Adventure** movies: big budgets, big incomes, stable ROI, ratings 6–7.5;
 - 8% of **crime** films and 15% of **drama** ones have been evaluated as hits;
 - **Horror** tends to have low budgets and high ROI variance, meaning that small investments can lead to profitable hits;
@@ -168,20 +180,20 @@ Some genres show a higher probability of producing hits.
 
 ###  Financial patterns
 - Bigger budgets bring higher revenues (correlation: 0.07 - weak), but do not guarantee higher profits (correlation: -0.85)
-- Profit is driven almost entirely by revenue (corr: 0.47), not by budget size.
--	Rating is almost independent of monetary performance, while is positively linked to film's duratioon (corr: 0.37)
+- Profit is driven almost entirely by revenue (corr: 0.47), not by budget size
+-	Rating is almost independent of monetary performance, while is positively linked to film's duration (corr: 0.37)
 - ROI distribution is highly skewed (trimming and log-scaling are necessary)
 
 ---
 
 ###  Temporal trends
 This section suggests how financial outcomes are more sensitive to industry dynamics than viewer reception.
-- **Ratings** almost constant over the years, (average: 6.6–6.8);
-- **ROI** and **profit** fluctuate much more, showing peaks (2014,2018) and a dramatic collapse (2020) maybe due to pandemic effects.
-Overall:
+- **Ratings** almost constant over the years (average: 6.6–6.8);
+- **ROI** and **profit** fluctuate much more, showing peaks (2014,2018) and a dramatic collapse (2020, maybe due to pandemic effects).  
+Overall:  
 **Share of hits** not steadily over time, strongly influenced by external industry factors and market conditions: 
   - noticeable peak around 2017–2018
-  - very low levels in 2020–2021 (pandemic).
+  - very low levels in 2020–2021 (pandemic)
 
 *These patterns refers to the whole dataset, they can differ according to the genre*
 
@@ -202,9 +214,9 @@ _`pip install -r requirements.txt`_
 
 ***2. Run data cleaning & metric creation:***
 _`python src/processing.py`_
+_`python src/models.py`_
 
 ***3. Run the full analysis:***
-_`python src/models.py`_
 _`python src/main.py`_
 
 ***4. Launch the interactive web app:***

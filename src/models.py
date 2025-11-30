@@ -56,7 +56,7 @@ class MoviePlotter:
         pal = dict(zip(levels, colors))
         return pal, levels
  
-    # Trimming data to remove extreme outliers (not in 0–99th percentile)
+    # Trimming data to remove extreme outliers (0–99th percentile)
     def trimmed(self, column):
         data = self.df[column].dropna()
         lower = data.quantile(0.01)
@@ -104,12 +104,12 @@ class MoviePlotter:
         filtered_values = self.trimmed(column)
         trimmed_df = trimmed_df[trimmed_df[column].isin(filtered_values)]
 
-        #colors
+        # Colors
         levels = list(trimmed_df[genre_col].value_counts().index)  
         pal, _ = self._cat_palette(levels, cmap="crest")           
         colors = [pal[g] for g in levels] 
           
-        #Plot
+        # Plot
         fig, ax = plt.subplots(figsize=(10, 5))
         sns.boxplot(data=trimmed_df, x=genre_col, y=column,
                     order=levels, palette=colors, showfliers=False, ax=ax)
@@ -129,7 +129,7 @@ class MoviePlotter:
                 print(f"Column '{c}' not found.")
                 return
 
-        # Drop missing values + trim ROI and Rating
+        # Drop missing values + trimming (ROI and Rating)
         trimmed_df = self.df[[genre_col, "roi", "rating"]].dropna().copy()
         trimmed_df = trimmed_df[trimmed_df["roi"].isin(self.trimmed("roi"))]
         trimmed_df = trimmed_df[trimmed_df["rating"].isin(self.trimmed("rating"))]
@@ -188,7 +188,7 @@ class MoviePlotter:
         yearly = d.groupby(year_col)[hit_col].mean().reset_index()
         yearly[hit_col] = yearly[hit_col] * 100  # convert to %
 
-        #Plot
+        # Plot
         fig, ax = plt.subplots(figsize=(8, 5))
         sns.lineplot(data=yearly, x=year_col, y=hit_col,
                      marker="o", linewidth=2.5,
@@ -202,7 +202,7 @@ class MoviePlotter:
         ax.set_ylabel("Share of Hits (%)")
         ax.grid(True, alpha=0.3)
         
-        #years as integers 
+        # years as integers 
         years = yearly[year_col].astype(int).unique()
         ax.set_xticks(years)
         ax.set_xticklabels(years, rotation=45)
@@ -219,15 +219,13 @@ class MoviePlotter:
             return
 
         d = self.df[[runtime_col, hit_col]].dropna().copy()
-        # Fasce standard cinema; puoi modificare i cut come vuoi
+        
+        # standard buckets
         bins = [0, 90, 110, 130, 150, 1_000]
         labels = ["<90", "90–110", "110–130", "130–150", "≥150"]
         d["runtime_bucket"] = pd.cut(d[runtime_col], bins=bins, labels=labels, right=False)
 
-        share = (
-            d.groupby("runtime_bucket")[hit_col]
-            .mean().mul(100).reset_index(name="hit_share")
-        )
+        share = (d.groupby("runtime_bucket")[hit_col].mean().mul(100).reset_index(name="hit_share"))
 
         #Plot
         fig, ax = plt.subplots(figsize=(7, 5))
@@ -299,7 +297,7 @@ class MoviePlotter:
                 y_pos[1], f"{roi:.2f}×",
                 va="center", ha="right", fontsize=10, color="#333333")
 
-        # 
+        # borders
         for spine in ["top", "right"]:
             ax.spines[spine].set_visible(False)
             ax2.spines[spine].set_visible(False)

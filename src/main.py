@@ -36,17 +36,15 @@ summary = {
     "Hit threshold (Profit $M)": round(df["profit"].quantile(0.75) / 1e6, 2)
 }
 
-print("\n Cleaned dataset summary:")
+print("\n Cleaned and enriched dataset summary:")
 for k, v in summary.items():
     print(f"{k}: {v}")
 
-#Save new metrics in a new cleaned dataset 
-df.to_csv("data/Movies_metrics.csv", index=False)
-
-# Load the dataset
-df_metrics = pd.read_csv("data/Movies_metrics.csv")
 
 ########
+# Load the cleaned and enriched dataset
+df_metrics = pd.read_csv("data/Movies_metrics.csv")
+
 # Check if a movie in the dataset is a "hit"
 print("\n🎬 Welcome! Check if a movie is a hit!")
 print("Type a movie title to check it, or 'exit' to quit.\n")
